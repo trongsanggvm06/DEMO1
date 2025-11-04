@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Damped Oscillator Demo</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: #0b0d10;
+        }
+
+        #scene {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .overlay {
+            position: fixed;
+            right: 16px;
+            background: rgba(10, 12, 16, 0.75);
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
+        }
+
+        #hud {
+            top: 16px;
+            min-width: 220px;
+            line-height: 1.4;
+            color: #e6edf3;
+        }
+
+        #hud span {
+            display: block;
+            font-size: 0.9rem;
+        }
+
+        #controls {
+            bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e6edf3;
+        }
+
+        #controls button {
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(24, 32, 45, 0.8);
+            color: inherit;
+            transition: background 0.2s ease;
+        }
+
+        #controls button:hover {
+            background: rgba(71, 133, 199, 0.8);
+        }
+
+        #inputPanel {
+            left: 16px;
+            right: auto;
+            top: 16px;
+            width: 260px;
+        }
+
+        #inputPanel h2 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        #paramTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            color: #d3dbe4;
+        }
+
+        #paramTable th,
+        #paramTable td {
+            padding: 4px 6px;
+            text-align: left;
+        }
+
+        #paramTable th {
+            font-weight: 600;
+            color: #f0f3f8;
+        }
+
+        #paramTable input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(23, 30, 43, 0.8);
+            color: #f5f8ff;
+        }
+
+        #applyParams {
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        #plotPanel {
+            left: 16px;
+            right: auto;
+            bottom: 16px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            width: 320px;
+        }
+
+        #plotPanel.visible {
+            display: flex;
+        }
+
+        #plotPanel canvas {
+            width: 100%;
+            height: 220px;
+            background: rgba(12, 16, 22, 0.85);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="scene"></canvas>
+
+    <div id="inputPanel" class="overlay">
+        <h2>Simulation Parameters</h2>
+        <table id="paramTable">
+            <tbody>
+                <tr>
+                    <th>m (kg)</th>
+                    <td><input id="input-m" type="number" step="any" min="0.0001" value="52000000" /></td>
+                </tr>
+                <tr>
+                    <th>c (N·s/m)</th>
+                    <td><input id="input-c" type="number" step="any" min="0" value="4900000" /></td>
+                </tr>
+                <tr>
+                    <th>k (N/m)</th>
+                    <td><input id="input-k" type="number" step="any" min="0.0001" value="513000000" /></td>
+                </tr>
+                <tr>
+                    <th>y<sub>0</sub> (m)</th>
+                    <td><input id="input-y0" type="number" step="any" value="0.03" /></td>
+                </tr>
+                <tr>
+                    <th>v<sub>0</sub> (m/s)</th>
+                    <td><input id="input-v0" type="number" step="any" value="0" /></td>
+                </tr>
+                <tr>
+                    <th>duration (s)</th>
+                    <td><input id="input-duration" type="number" step="any" min="0.0001" value="60" /></td>
+                </tr>
+            </tbody>
+        </table>
+        <button id="applyParams">Start</button>
+    </div>
+
+    <div id="hud" class="overlay">
+        <strong>Dao động tắt dần</strong>
+        <span id="hud-m"></span>
+        <span id="hud-c"></span>
+        <span id="hud-k"></span>
+        <span id="hud-omega"></span>
+        <span id="hud-zeta"></span>
+    </div>
+
+    <div id="controls" class="overlay">
+        <button id="playPause">Pause</button>
+        <button id="reset">Reset</button>
+    </div>
+
+    <div id="plotPanel" class="overlay">
+        <strong>Time Response</strong>
+        <canvas id="plotCanvas"></canvas>
+        <button id="downloadPlot">Download Plot PNG</button>
+    </div>
+
+    <script src="./params.js"></script>
+    <script type="module" src="https://unpkg.com/three@0.160.0/build/three.module.js?module"></script>
+    <script type="module" src="https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.12.0/rapier.es.js"></script>
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
