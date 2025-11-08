@@ -18,9 +18,10 @@ const hudElements = {
     k: document.getElementById("hud-k"),
     omega: document.getElementById("hud-omega"),
     zeta: document.getElementById("hud-zeta"),
+    dampingTime: document.getElementById("hud-dampingTime"),
 };
 
-const paramKeys = ["m", "c", "k", "y0", "v0", "duration"];
+const paramKeys = ["m", "c", "k", "y0", "v0"];
 const paramInputs = paramKeys.reduce((acc, key) => {
     const el = document.getElementById(`input-${key}`);
     if (!el) {
@@ -90,11 +91,15 @@ const computeDerived = (params) => {
 
 const updateHud = () => {
     const { omegaN, dampingRatio } = computeDerived(currentParams);
+    // Calculate damping time (time for amplitude to reach 1% of initial)
+    const dampingTime = -Math.log(0.01) / (dampingRatio * omegaN);
+    
     hudElements.m.textContent = `Kh\u1ed1i l\u01b0\u1ee3ng (m) = ${formatNumber(currentParams.m)} kg`;
     hudElements.c.textContent = `H\u1ec7 s\u1ed1 c\u1ea3n (c) = ${formatNumber(currentParams.c)} N\u00b7s/m`;
     hudElements.k.textContent = `\u0110\u1ed9 c\u1ee9ng l\u00f2 xo (k) = ${formatNumber(currentParams.k)} N/m`;
     hudElements.omega.textContent = `T\u1ea7n s\u1ed1 ri\u00eang (\u03c9\u2099) = ${formatNumber(omegaN)} rad/s`;
     hudElements.zeta.textContent = `T\u1ef7 s\u1ed1 c\u1ea3n (\u03b6) = ${formatNumber(dampingRatio)}`;
+    hudElements.dampingTime.textContent = `Th\u1eddi gian t\u1eaft = ${formatNumber(dampingTime)} s`;
 };
 
 const populateInputs = () => {
@@ -117,7 +122,7 @@ const readParamsFromInputs = () => {
         if (!Number.isFinite(value)) {
             throw new Error(`Parameter "${key}" is not a valid number.`);
         }
-        if (["m", "k", "duration"].includes(key) && value <= 0) {
+        if (["m", "k"].includes(key) && value <= 0) {
             throw new Error(`Parameter "${key}" must be greater than zero.`);
         }
         if (key === "c" && value < 0) {
@@ -246,9 +251,10 @@ const computeTrajectory = (params) => {
     if (params.dt <= 0) {
         throw new Error("dt must be positive.");
     }
-    if (params.duration <= 0) {
-        throw new Error("duration must be positive.");
-    }
+    
+    // Calculate duration based on damping time
+    const { omegaN, dampingRatio } = computeDerived(params);
+    params.duration = -Math.log(0.01) / (dampingRatio * omegaN);
     const steps = Math.max(1, Math.ceil(params.duration / params.dt));
     const times = new Array(steps + 1);
     const xs = new Array(steps + 1);

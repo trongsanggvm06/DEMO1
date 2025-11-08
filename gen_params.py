@@ -16,7 +16,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--k", type=float, required=True, help="Stiffness (N/m)")
     parser.add_argument("--y0", type=float, required=True, help="Initial displacement (m)")
     parser.add_argument("--v0", type=float, required=True, help="Initial velocity (m/s)")
-    parser.add_argument("--duration", type=float, required=True, help="Simulation duration (s)")
     parser.add_argument("--dt", type=float, required=True, help="Integration timestep (s)")
     parser.add_argument("--scale", type=float, required=True, help="Render scale factor")
     parser.add_argument(
@@ -56,13 +55,16 @@ def integrate(
     k: float,
     x0: float,
     v0: float,
-    duration: float,
     dt: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     if dt <= 0:
         raise ValueError("dt must be positive.")
-    if duration <= 0:
-        raise ValueError("duration must be positive.")
+    
+    # Calculate natural frequency and damping ratio
+    omega_n = np.sqrt(k / m)
+    zeta = c / (2 * np.sqrt(m * k))
+    # Calculate duration based on time to reach 1% of initial amplitude
+    duration = -np.log(0.01) / (zeta * omega_n)
 
     steps = int(np.ceil(duration / dt))
     times = np.linspace(0.0, steps * dt, steps + 1)
@@ -108,11 +110,15 @@ def main() -> None:
         args.k,
         args.y0,
         args.v0,
-        args.duration,
         args.dt,
     )
 
     plot_solution(times, xs, vs, plot_path)
+
+    # Calculate natural frequency and damping ratio for duration
+    omega_n = np.sqrt(args.k / args.m)
+    zeta = args.c / (2 * np.sqrt(args.m * args.k))
+    duration = -np.log(0.01) / (zeta * omega_n)
 
     params = {
         "m": args.m,
@@ -120,9 +126,9 @@ def main() -> None:
         "k": args.k,
         "y0": args.y0,
         "v0": args.v0,
-        "duration": args.duration,
         "dt": args.dt,
         "scale": args.scale,
+        "duration": duration  # Include calculated duration
     }
     write_params_js(params, params_path)
 

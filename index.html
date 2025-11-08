@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Damped Oscillator Demo</title>
+    <title>Demo web NCKH</title>
     <style>
         :root {
             color-scheme: dark;
@@ -163,10 +163,6 @@
                     <th>v<sub>0</sub> (m/s)</th>
                     <td><input id="input-v0" type="number" step="any" value="0" /></td>
                 </tr>
-                <tr>
-                    <th>duration (s)</th>
-                    <td><input id="input-duration" type="number" step="any" min="0.0001" value="60" /></td>
-                </tr>
             </tbody>
         </table>
         <button id="applyParams">Start</button>
@@ -179,6 +175,7 @@
         <span id="hud-k"></span>
         <span id="hud-omega"></span>
         <span id="hud-zeta"></span>
+        <span id="hud-dampingTime"></span>
     </div>
 
     <div id="controls" class="overlay">
